@@ -1,4 +1,6 @@
 services:
+
+  # API для работы с заказами
   api:
     build: .
     container_name: orders_api
@@ -9,6 +11,7 @@ services:
     ports:
       - "8000:8000"
 
+  # база данных
   postgres:
     image: postgres:16
     container_name: orders_postgres
@@ -21,11 +24,45 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
   
+  # кэш для хранения данных
   redis:
     image: redis:7
     container_name: orders_redis
     ports:
       - "6379:6379"
+
+  # брокер сообщений
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: orders_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672" # web ui
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  # читает очередь и запуск фоновых задач
+  consumer:
+    build: .
+    container_name: order_consumer
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      - RABBIT_URL=amqp://guest:guest@rabbitmq:5672/
+      - REDIS_URL=redis://redis:6379/0
+    command: python -m app.consumer
+  
+  # worker для обработки задач TaskIQ
+  worker:
+    build: .
+    container_name: order_worker
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: ["taskiq", "worker", "app.tasks:message_broker"]
 
 volumes:
   pgdata:

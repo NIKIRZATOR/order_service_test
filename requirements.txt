@@ -12,3 +12,6 @@ passlib==1.7.4
 python-multipart
 pydantic[email]
 redis==7.1.0
+aio-pika==9.5.8
+taskiq==0.12.1
+taskiq-redis==1.2.2

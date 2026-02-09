@@ -7,8 +7,10 @@ import logging
 from app.api.deps import get_current_user
 from app.database.session import get_database
 from app.database.models.order_model import OrderModel, OrderStatus
+from app.schemas import order
 from app.schemas.order import OrderCreateIn, OrderPatchIn
 from app.services.cache_orders import get_cached_order, set_cached_order
+from app.services.rabbit_publisher import publish_new_order
 
 
 orders_router = APIRouter(tags=["orders"])
@@ -43,6 +45,13 @@ async def create_order(
 
     payload = order_to_dict(order)
     await set_cached_order(order.id, payload)
+
+    logger.info("Заказ создан id=%s user_id=%s total=%s", order.id, order.user_id, order.total_price)
+    logger.info("Отправка в RABBITMQ order_id=%s", order.id)
+
+    # добавляем сообщение о новом заказе в очередь rabbitmq
+    await publish_new_order(order.id)
+    
     return payload
 
 

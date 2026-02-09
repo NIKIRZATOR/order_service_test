@@ -10,8 +10,11 @@ class Settings(BaseSettings):
 
     # конфиг для redis
     REDIS_URL: str = "redis://redis:6379/0"
-    ORDER_CACHE_EXPIRE_SECONDS: int = 300 
+    ORDER_CACHE_EXPIRE_SECONDS: int = 300
 
+    # конфиг для RabbitMQ
+    RABBIT_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    NEW_ORDER_QUEUE: str = "new_order"
 
     class Config:
         env_file = ".env"
