@@ -2,7 +2,7 @@ import enum
 from sqlalchemy import ForeignKey, DateTime, func, Float, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from database.database import Base
+from app.database.database import Base
 
 
 class OrderStatus(str, enum.Enum):
