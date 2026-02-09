@@ -2,5 +2,24 @@ services:
   api:
     build: .
     container_name: orders_api
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/orders_db
     ports:
       - "8000:8000"
+
+  postgres:
+    image: postgres:16
+    container_name: orders_postgres
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
