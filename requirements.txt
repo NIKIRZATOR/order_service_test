@@ -15,3 +15,4 @@ redis==7.1.0
 aio-pika==9.5.8
 taskiq==0.12.1
 taskiq-redis==1.2.2
+slowapi==0.1.9

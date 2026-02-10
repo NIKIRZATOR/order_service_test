@@ -1,9 +1,11 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import logging
+
+from app.core.rate_limit import limiter
 
 from app.api.deps import get_current_user
 from app.database.session import get_database
@@ -31,7 +33,9 @@ def order_to_dict(order: OrderModel) -> dict:
 
 
 @orders_router.post("/orders", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def create_order(
+    request: Request,
     data: OrderCreateIn,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_database)
@@ -57,7 +61,9 @@ async def create_order(
 
 
 @orders_router.get("/orders/{order_id}")
+@limiter.limit("10/minute")
 async def get_order(
+    request: Request,
     order_id: UUID,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_database)
@@ -88,7 +94,9 @@ async def get_order(
 
 
 @orders_router.patch("/orders/{order_id}")
+@limiter.limit("20/minute")
 async def patch_order(
+    request: Request,
     order_id: UUID,
     data: OrderPatchIn,
     user = Depends(get_current_user),
@@ -113,7 +121,9 @@ async def patch_order(
 
 
 @orders_router.get("/orders/user/{user_id}")
+@limiter.limit("20/minute")
 async def get_user_orders(
+    request: Request,
     user_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_database)
