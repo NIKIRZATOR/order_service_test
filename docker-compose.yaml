@@ -1,4 +1,4 @@
-﻿services:
+services:
   # API для работы с заказами
   api:
     build: .
@@ -9,7 +9,14 @@
       rabbitmq:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/orders_db
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REDIS_URL=${REDIS_URL}
+      - ORDER_CACHE_EXPIRE_SECONDS=${ORDER_CACHE_EXPIRE_SECONDS}
+      - RABBIT_URL=${RABBIT_URL}
+      - NEW_ORDER_QUEUE=${NEW_ORDER_QUEUE}
       - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"
@@ -19,15 +26,15 @@
     image: postgres:16
     container_name: orders_postgres
     environment:
-      POSTGRES_DB: orders_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d orders_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -48,8 +55,8 @@
       - "5672:5672"
       - "15672:15672" # web ui
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -67,8 +74,8 @@
       redis:
         condition: service_started
     environment:
-      - RABBIT_URL=amqp://guest:guest@rabbitmq:5672/
-      - REDIS_URL=redis://redis:6379/0
+      - RABBIT_URL=${RABBIT_URL}
+      - REDIS_URL=${REDIS_URL}
       - PYTHONUNBUFFERED=1
     command: ["python", "-u", "-m", "app.consumer"]
 
@@ -80,7 +87,7 @@
       redis:
         condition: service_started
     environment:
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=${REDIS_URL}
       - PYTHONUNBUFFERED=1
     command: ["taskiq", "worker", "app.tasks:message_broker"]
 

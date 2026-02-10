@@ -32,7 +32,7 @@ def order_to_dict(order: OrderModel) -> dict:
     }
 
 
-@orders_router.post("/orders", status_code=status.HTTP_201_CREATED)
+@orders_router.post("/orders/", status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 async def create_order(
     request: Request,
@@ -60,7 +60,7 @@ async def create_order(
     return payload
 
 
-@orders_router.get("/orders/{order_id}")
+@orders_router.get("/orders/{order_id}/")
 @limiter.limit("10/minute")
 async def get_order(
     request: Request,
@@ -93,7 +93,7 @@ async def get_order(
     return payload
 
 
-@orders_router.patch("/orders/{order_id}")
+@orders_router.patch("/orders/{order_id}/")
 @limiter.limit("20/minute")
 async def patch_order(
     request: Request,
@@ -120,7 +120,7 @@ async def patch_order(
     return payload
 
 
-@orders_router.get("/orders/user/{user_id}")
+@orders_router.get("/orders/user/{user_id}/")
 @limiter.limit("20/minute")
 async def get_user_orders(
     request: Request,

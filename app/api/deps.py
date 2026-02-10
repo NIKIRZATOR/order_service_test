@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.database.session import get_database
 from app.database.models.user_model import UserModel
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token/")
 
 async def get_current_user(
         token: str = Depends(oauth2_scheme),

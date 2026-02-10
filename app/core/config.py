@@ -1,22 +1,22 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/orders_db"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # конфиг для JWT
-    JWT_SECRET_KEY: str = "CHNG_IT"
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24
+    database_url: str
 
-    # конфиг для redis
-    REDIS_URL: str = "redis://redis:6379/0"
-    ORDER_CACHE_EXPIRE_SECONDS: int = 300
+    # config for JWT
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    # конфиг для RabbitMQ
-    RABBIT_URL: str = "amqp://guest:guest@rabbitmq:5672/"
-    NEW_ORDER_QUEUE: str = "new_order"
+    # config for redis
+    REDIS_URL: str
+    ORDER_CACHE_EXPIRE_SECONDS: int
 
-    class Config:
-        env_file = ".env"
+    # config for RabbitMQ
+    RABBIT_URL: str
+    NEW_ORDER_QUEUE: str
 
 settings = Settings()

@@ -13,7 +13,7 @@ from app.schemas.auth import RegisterIn, TokenOut, UserOut
 
 auth_router = APIRouter(tags=["auth"])
 
-@auth_router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/register/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")  # ограничение на регистрацию: 5 запросов в минуту с одного IP
 async def register(request: Request, data: RegisterIn, db: AsyncSession = Depends(get_database)):
     res = await db.execute(select(UserModel).where(UserModel.email == data.email))
@@ -27,7 +27,7 @@ async def register(request: Request, data: RegisterIn, db: AsyncSession = Depend
 
     return UserOut(id=user.id, email=user.email)
 
-@auth_router.post("/token", response_model=TokenOut)
+@auth_router.post("/token/", response_model=TokenOut)
 @limiter.limit("5/minute")
 async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_database)):
     res = await db.execute(select(UserModel).where(UserModel.email == form.username))

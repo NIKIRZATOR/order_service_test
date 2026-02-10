@@ -11,13 +11,16 @@ from app.schemas.auth import UserOut
 
 default_router = APIRouter(tags=["default"])
 
-@default_router.get("/home/database")
+@default_router.get("/home/database/")
 @limiter.limit("1/minute")
 async def check_db(request: Request, db: AsyncSession = Depends(get_db)):
+
+    # не по требованию SQL-ORM, а просто для проверки подключения к БД
     result = await db.execute(text("SELECT 1"))
+
     return {"db_result": result.scalar()}
 
-@default_router.get("/fetch_me", response_model=UserOut)
+@default_router.get("/fetch_me/", response_model=UserOut)
 @limiter.limit("10/minute")
 async def fetch_me(request: Request, user = Depends(get_current_user)):
     return UserOut(id=user.id, email=user.email)

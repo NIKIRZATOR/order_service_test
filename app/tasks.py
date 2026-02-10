@@ -13,5 +13,9 @@ async def process_order(order_id: str) -> None:
     order_uuid = UUID(order_id)
 
     logger.info("Обработка заказа... order_id=%s", order_uuid)
+    print(f"Processing order {order_id}...")
+
     await asyncio.sleep(2)
+    
     logger.info("Заказ обработан! order_id=%s", order_uuid)
+    print(f"Order {order_id} processed")
