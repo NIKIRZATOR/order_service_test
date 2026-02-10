@@ -1,13 +1,16 @@
 services:
-
   # API для работы с заказами
   api:
     build: .
     container_name: orders_api
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/orders_db
+      - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"
 
@@ -23,7 +26,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   # кэш для хранения данных
   redis:
     image: redis:7
@@ -41,27 +50,38 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
-  # читает очередь и запуск фоновых задач
+  # читает очередь и запускает фоновые задачи
   consumer:
     build: .
     container_name: order_consumer
     depends_on:
-      - rabbitmq
-      - redis
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - RABBIT_URL=amqp://guest:guest@rabbitmq:5672/
       - REDIS_URL=redis://redis:6379/0
-    command: python -m app.consumer
-  
+      - PYTHONUNBUFFERED=1
+    command: ["python", "-u", "-m", "app.consumer"]
+
   # worker для обработки задач TaskIQ
   worker:
     build: .
     container_name: order_worker
     depends_on:
-      - redis
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
     command: ["taskiq", "worker", "app.tasks:message_broker"]
 
 volumes:

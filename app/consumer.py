@@ -1,17 +1,22 @@
-import json
 import asyncio
-import aio_pika
+import json
 import logging
 from typing import Any, Dict, Optional, Union
 
-from app.core.config import settings
-from app.tasks import process_order
+import aio_pika
 
+from app.core.config import settings
+from app.tasks import message_broker, process_order
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger("consumer")
+
 
 # на случай если контейнер rabbitmq поднимается дольше остальных сервисов
 # добавим переподключение
-
 async def conn_withretry():
     while True:
         try:
@@ -25,8 +30,8 @@ async def conn_withretry():
             print(f"Ошибка подключения к rabbitmq: {e}. retry 10 sec")
             await asyncio.sleep(10)
 
-def _parse_payload(raw: str) -> Optional[Dict[str, Any]]:
 
+def _parse_payload(raw: str) -> Optional[Dict[str, Any]]:
     try:
         payload: Union[Dict[str, Any], str, int] = json.loads(raw)
     except json.JSONDecodeError:
@@ -60,46 +65,49 @@ def _parse_payload(raw: str) -> Optional[Dict[str, Any]]:
 
 
 async def main() -> None:
+    await message_broker.startup()
     conn = await conn_withretry()
-    channel = await conn.channel()
 
-    queue = await channel.declare_queue(settings.NEW_ORDER_QUEUE, durable=True)
+    try:
+        channel = await conn.channel()
+        queue = await channel.declare_queue(settings.NEW_ORDER_QUEUE, durable=True)
 
-    async with queue.iterator() as queue_iter:
-        async for message in queue_iter:
-            async with message.process():
-                raw = message.body.decode("utf-8")
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+                async with message.process():
+                    raw = message.body.decode("utf-8")
 
-                logger.info("2. Сообщение получено =%s", raw)
+                    logger.info("2. Сообщение получено =%s", raw)
 
-                payload = _parse_payload(raw)
+                    payload = _parse_payload(raw)
 
-                logger.info("3. Payload декодирован =%s тип =%s", payload, type(payload))
+                    logger.info("3. Payload декодирован =%s тип =%s", payload, type(payload))
 
-                if payload is None:
-                    print("Невалидный JSON/формат сообщения:", raw)
-                    continue
+                    if payload is None:
+                        print("Невалидный JSON/формат сообщения:", raw)
+                        continue
 
-                order_id = payload.get("order_id")
+                    order_id = payload.get("order_id")
 
-                logger.info("4. Извлечен order_id=%s", order_id)
-                
-                if order_id is None:
-                    print("Нет order_id в сообщении:", payload)
-                    continue
+                    logger.info("4. Извлечен order_id=%s", order_id)
 
-                try:
-                    order_id_int = int(order_id)
-                except (TypeError, ValueError):
-                    print("order_id не число:", payload)
-                    continue
-                
-                logger.info("5. Отправка задачи в TaskIQ, order_id=%s", order_id)
+                    if order_id is None:
+                        print("Нет order_id в сообщении:", payload)
+                        continue
 
-                # отправляем задачу в TaskIQ
-                await process_order.kiq(order_id_int)
+                    try:
+                        order_id_int = int(order_id)
+                    except (TypeError, ValueError):
+                        print("order_id не число:", payload)
+                        continue
+
+                    logger.info("5. Отправка задачи в TaskIQ, order_id=%s", order_id)
+
+                    # отправляем задачу в TaskIQ
+                    await process_order.kiq(order_id_int)
+    finally:
+        await message_broker.shutdown()
 
 
 if __name__ == "__main__":
-    
     asyncio.run(main())
