@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/order_db"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/orders_db"
 
     # конфиг для JWT
     JWT_SECRET_KEY: str = "CHNG_IT"

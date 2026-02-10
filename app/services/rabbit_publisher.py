@@ -1,10 +1,12 @@
 import json
 import logging
+from uuid import UUID
 import aio_pika
 
 from app.core.config import settings
 
-async def publish_new_order(order_id: int) -> None:
+
+async def publish_new_order(order_id: UUID) -> None:
     conn = await aio_pika.connect_robust(settings.RABBIT_URL)
 
     async with conn:
@@ -14,13 +16,12 @@ async def publish_new_order(order_id: int) -> None:
         await channel.declare_queue(queue_name, durable=True)
 
         message = aio_pika.Message(
-            body=json.dumps({"order_id": order_id}).encode(),
+            body=json.dumps({"order_id": str(order_id)}).encode(),
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
         logger = logging.getLogger("orders")
 
-        logger.info("RabbitMQ публикация: очередь=%s пол_наг=%s", settings.NEW_ORDER_QUEUE, message.body)
+        logger.info("RabbitMQ публикация: очередь=%s payload=%s", settings.NEW_ORDER_QUEUE, message.body,)
 
         await channel.default_exchange.publish(message, routing_key=queue_name)
-

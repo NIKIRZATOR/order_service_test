@@ -1,6 +1,7 @@
-import asyncio
+﻿import asyncio
 import json
 import logging
+from uuid import UUID
 from typing import Any, Dict, Optional, Union
 
 import aio_pika
@@ -33,31 +34,15 @@ async def conn_withretry():
 
 def _parse_payload(raw: str) -> Optional[Dict[str, Any]]:
     try:
-        payload: Union[Dict[str, Any], str, int] = json.loads(raw)
+        payload: Union[Dict[str, Any], str] = json.loads(raw)
     except json.JSONDecodeError:
         return None
 
     # если пришла JSON-строка, внутри которой ещё один JSON
     if isinstance(payload, str):
-        # вариант: "123"
-        if payload.isdigit():
-            return {"order_id": int(payload)}
-
-        # вариант: "{\"order_id\": 123}"
-        try:
-            payload2 = json.loads(payload)
-            if isinstance(payload2, dict):
-                return payload2
-        except json.JSONDecodeError:
-            return None
-
-        return None
-
-    # вариант: 123
-    if isinstance(payload, int):
         return {"order_id": payload}
 
-    # вариант: {"order_id": 123}
+    # вариант: {"order_id": "..."}
     if isinstance(payload, dict):
         return payload
 
@@ -96,15 +81,15 @@ async def main() -> None:
                         continue
 
                     try:
-                        order_id_int = int(order_id)
+                        order_id_uuid = UUID(str(order_id))
                     except (TypeError, ValueError):
-                        print("order_id не число:", payload)
+                        print("order_id не UUID:", payload)
                         continue
 
                     logger.info("5. Отправка задачи в TaskIQ, order_id=%s", order_id)
 
                     # отправляем задачу в TaskIQ
-                    await process_order.kiq(order_id_int)
+                    await process_order.kiq(str(order_id_uuid))
     finally:
         await message_broker.shutdown()
 

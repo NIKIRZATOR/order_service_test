@@ -1,4 +1,5 @@
 import enum
+import uuid
 from sqlalchemy import ForeignKey, DateTime, func, Float, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,7 +15,7 @@ class OrderStatus(str, enum.Enum):
 class OrderModel(Base):
     __tablename__ = "orders"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     items : Mapped[dict] = mapped_column(JSONB, nullable=False)
     total_price: Mapped[float] = mapped_column(Float, nullable=False)

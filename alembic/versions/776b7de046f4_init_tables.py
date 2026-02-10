@@ -1,8 +1,8 @@
-"""create users and orders
+"""init tables
 
-Revision ID: 44ba7dbcfc28
+Revision ID: 776b7de046f4
 Revises: 
-Create Date: 2026-02-09 14:16:45.494170
+Create Date: 2026-02-10 17:27:23.550675
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '44ba7dbcfc28'
+revision: str = '776b7de046f4'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.UniqueConstraint('email')
     )
     op.create_table('orders',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('items', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('total_price', sa.Float(), nullable=False),

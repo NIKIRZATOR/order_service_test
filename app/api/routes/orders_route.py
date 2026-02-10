@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,11 +58,11 @@ async def create_order(
 
 @orders_router.get("/orders/{order_id}")
 async def get_order(
-    order_id: int,
+    order_id: UUID,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_database)
 ):
-    cached = await get_cached_order(order_id)
+    cached = await get_cached_order(str(order_id))
     if cached:
         if cached.get("user_id") != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к этому заказу")
@@ -82,13 +83,13 @@ async def get_order(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к этому заказу")
     
     payload = order_to_dict(order)
-    await set_cached_order(order.id, payload)
+    await set_cached_order(str(order.id), payload)
     return payload
 
 
 @orders_router.patch("/orders/{order_id}")
 async def patch_order(
-    order_id: int,
+    order_id: UUID,
     data: OrderPatchIn,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_database)
@@ -107,7 +108,7 @@ async def patch_order(
     await db.refresh(order)
 
     payload = order_to_dict(order)
-    await set_cached_order(order.id, payload)
+    await set_cached_order(str(order.id), payload)
     return payload
 
 
